@@ -1,21 +1,24 @@
 import express from "express";
 import dotenv from "dotenv";
+import authRoutes from "./routes/auth";
 
 dotenv.config();
 
 const app = express();
 
 app.use(express.json());
+app.use("/api/auth", authRoutes);
 
 app.get("/health", (_req, res) => {
   res.status(200).json({ status: "ok" });
 });
 
-export default app;
-
+const defaultPort = 4000;
 if (require.main === module) {
-  const PORT = process.env.PORT || 4000;
+  const PORT = process.env.PORT || defaultPort;
   app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
   });
 }
+
+export default app;

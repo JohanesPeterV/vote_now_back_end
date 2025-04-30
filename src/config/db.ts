@@ -1,9 +1,21 @@
 import mongoose from "mongoose";
 
 export const connectDB = async (uri: string) => {
-  await mongoose.connect(uri);
+  try {
+    await mongoose.disconnect(); // Ensure no existing connections
+    await mongoose.connect(uri);
+  } catch (error) {
+    console.error("MongoDB connection error:", error);
+    throw error;
+  }
 };
 
 export const disconnectDB = async () => {
-  await mongoose.connection.close();
+  try {
+    await mongoose.connection.dropDatabase(); // Clean up test database
+    await mongoose.disconnect();
+  } catch (error) {
+    console.error("MongoDB disconnect error:", error);
+    throw error;
+  }
 };
