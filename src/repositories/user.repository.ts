@@ -1,16 +1,23 @@
-import { User, IUser } from "../models/user";
+import { User, UserModel } from "../models/user.model";
+import { MongoError } from "mongodb";
 
 export class UserRepository {
-  async findByEmail(email: string): Promise<IUser | null> {
-    return User.findOne({ email });
+  async findByEmail(email: string): Promise<User | null> {
+    return UserModel.findOne({ email });
   }
 
-  async create(userData: {
-    email: string;
-    password: string;
-    role: string;
-  }): Promise<IUser> {
-    const user = new User(userData);
-    return user.save();
+  async create(user: Omit<User, "_id">): Promise<User> {
+    try {
+      return await UserModel.create(user);
+    } catch (error) {
+      if (error instanceof MongoError && error.code === 11000) {
+        throw new Error("User already exists");
+      }
+      throw error;
+    }
+  }
+
+  async findAll(): Promise<User[]> {
+    return UserModel.find();
   }
 }

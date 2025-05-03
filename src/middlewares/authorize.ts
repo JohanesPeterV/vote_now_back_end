@@ -5,11 +5,13 @@ type Role = "admin" | "user";
 export const authorizeRole = (requiredRole: Role) => {
   return (req: Request, res: Response, next: NextFunction) => {
     if (!req.user) {
-      return res.status(401).json({ message: "Authentication required" });
+      res.status(401).json({ message: "Authentication required" });
+      return;
     }
 
     if (req.user.role !== requiredRole) {
-      return res.status(403).json({ message: "Insufficient permissions" });
+      res.status(403).json({ message: "Insufficient permissions" });
+      return;
     }
 
     next();

@@ -1,18 +1,24 @@
+import mongoose from "mongoose";
 import request from "supertest";
+import { MongoMemoryServer } from "mongodb-memory-server";
 import app from "../../app";
-import { connectDB, disconnectDB } from "../../config/db";
 
 describe("AuthController", () => {
-  const testUri = process.env.DB_URI;
+  let mongoServer: MongoMemoryServer;
 
   beforeAll(async () => {
-    if (!testUri) {
-      throw new Error("DB_URI environment variable is not set");
-    }
-    await connectDB(testUri);
+    mongoServer = await MongoMemoryServer.create();
+    const mongoUri = mongoServer.getUri();
+    await mongoose.connect(mongoUri);
   });
+
+  beforeEach(async () => {
+    await mongoose.connection.dropDatabase();
+  });
+
   afterAll(async () => {
-    await disconnectDB();
+    await mongoose.disconnect();
+    await mongoServer.stop();
   });
 
   describe("POST /api/auth/register", () => {
@@ -66,7 +72,7 @@ describe("AuthController", () => {
       password: "Password123",
     };
 
-    beforeAll(async () => {
+    beforeEach(async () => {
       await request(app).post("/api/auth/register").send(validUserData);
     });
 

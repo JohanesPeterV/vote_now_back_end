@@ -21,7 +21,8 @@ export const authenticateJWT = (
   const authHeader = req.headers.authorization;
 
   if (!authHeader) {
-    return res.status(401).json({ message: "No token provided" });
+    res.status(401).json({ message: "No token provided" });
+    return;
   }
 
   const token = authHeader.split(" ")[1];
@@ -31,6 +32,7 @@ export const authenticateJWT = (
     req.user = decoded;
     next();
   } catch {
-    return res.status(401).json({ message: "Invalid token" });
+    res.status(401).json({ message: "Invalid token" });
+    return;
   }
 };

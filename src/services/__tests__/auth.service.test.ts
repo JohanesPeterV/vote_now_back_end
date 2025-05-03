@@ -1,25 +1,25 @@
 import mongoose from "mongoose";
+import { MongoMemoryServer } from "mongodb-memory-server";
 import { AuthService } from "../auth.service";
-import { connectDB, disconnectDB } from "../../config/db";
 
 describe("AuthService", () => {
-  const testUri = process.env.DB_URI;
+  let mongoServer: MongoMemoryServer;
   let authService: AuthService;
 
   beforeAll(async () => {
-    if (!testUri) {
-      throw new Error("DB_URI environment variable is not set");
-    }
-    await connectDB(testUri);
+    mongoServer = await MongoMemoryServer.create();
+    const mongoUri = mongoServer.getUri();
+    await mongoose.connect(mongoUri);
     authService = new AuthService();
   });
 
   beforeEach(async () => {
-    await mongoose.connection.db?.dropDatabase();
+    await mongoose.connection.dropDatabase();
   });
 
   afterAll(async () => {
-    await disconnectDB();
+    await mongoose.disconnect();
+    await mongoServer.stop();
   });
 
   describe("register", () => {
@@ -42,6 +42,7 @@ describe("AuthService", () => {
       );
     });
   });
+
   describe("login", () => {
     const validUserData = {
       email: "login-test@example.com",
