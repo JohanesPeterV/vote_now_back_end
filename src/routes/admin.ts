@@ -1,10 +1,16 @@
 import { Router } from "express";
-import { getAllUsers } from "../controllers/user.controller";
+import { getAllUsers, deleteUserById } from "../controllers/user.controller";
 import { authenticateJWT } from "../middlewares/authenticate";
 import { authorizeRole } from "../middlewares/authorize";
 
 const router = Router();
 
 router.get("/users", authenticateJWT, authorizeRole("admin"), getAllUsers);
+router.delete(
+  "/users/:id",
+  authenticateJWT,
+  authorizeRole("admin"),
+  deleteUserById
+);
 
 export default router;

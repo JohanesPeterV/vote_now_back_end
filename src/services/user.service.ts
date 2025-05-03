@@ -17,4 +17,11 @@ export class UserService {
     }));
     return sanitizedUsers;
   }
+
+  async deleteUserById(id: string): Promise<void> {
+    const deletedUser = await this.userRepository.deleteById(id);
+    if (!deletedUser) {
+      throw new Error("User not found");
+    }
+  }
 }
