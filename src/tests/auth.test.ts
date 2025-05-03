@@ -92,7 +92,6 @@ describe("Authentication Endpoints", () => {
       expect(res.body.user).toHaveProperty("email", testUser.email);
       expect(res.body.user).not.toHaveProperty("password");
 
-      // Verify token is valid
       const decoded = jwt.verify(res.body.token, config.jwtSecret);
       expect(decoded).toHaveProperty("email", testUser.email);
     });
@@ -123,7 +122,6 @@ describe("Authentication Endpoints", () => {
     let adminToken: string;
 
     beforeEach(async () => {
-      // Create a regular user
       await request(app).post("/api/auth/register").send({
         email: "user@example.com",
         password: "Password123!",
@@ -131,7 +129,6 @@ describe("Authentication Endpoints", () => {
         role: "user",
       });
 
-      // Create an admin user
       await request(app).post("/api/auth/register").send({
         email: "admin@example.com",
         password: "Password123!",
@@ -139,7 +136,6 @@ describe("Authentication Endpoints", () => {
         role: "admin",
       });
 
-      // Login and get tokens
       const userRes = await request(app).post("/api/auth/login").send({
         email: "user@example.com",
         password: "Password123!",

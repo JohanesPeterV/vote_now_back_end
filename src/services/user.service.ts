@@ -1,5 +1,6 @@
 import { UserRepository } from "../repositories/user.repository";
 import { User } from "../models/user.model";
+import bcrypt from "bcrypt";
 
 export class UserService {
   private userRepository: UserRepository;
@@ -23,5 +24,28 @@ export class UserService {
     if (!deletedUser) {
       throw new Error("User not found");
     }
+  }
+
+  async updateUserById(
+    id: string,
+    data: { email?: string; password?: string; role?: "admin" | "user" }
+  ): Promise<Omit<User, "password">> {
+    const updateData: Partial<User> = { ...data };
+
+    if (data.password) {
+      const salt = await bcrypt.genSalt(10);
+      updateData.password = await bcrypt.hash(data.password, salt);
+    }
+
+    const updatedUser = await this.userRepository.updateById(id, updateData);
+    if (!updatedUser) {
+      throw new Error("User not found");
+    }
+
+    return {
+      _id: updatedUser._id,
+      email: updatedUser.email,
+      role: updatedUser.role,
+    };
   }
 }

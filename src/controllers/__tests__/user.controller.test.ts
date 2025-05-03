@@ -30,7 +30,6 @@ describe("UserController", () => {
 
   describe("GET /api/admin/users", () => {
     beforeEach(async () => {
-      // Create test users and generate tokens
       const adminUser = await userRepository.create({
         email: "admin@test.com",
         password: "Password123",
@@ -103,21 +102,18 @@ describe("UserController", () => {
     let userToDelete: User;
 
     beforeEach(async () => {
-      // Create admin user
       const adminUser = await userRepository.create({
         email: "admin@test.com",
         password: "Password123",
         role: "admin" as const,
       });
 
-      // Create a user to delete
       userToDelete = await userRepository.create({
         email: "delete@test.com",
         password: "Password123",
         role: "user" as const,
       });
 
-      // Create a regular user
       const normalUser = await userRepository.create({
         email: "user@test.com",
         password: "Password123",
@@ -148,7 +144,6 @@ describe("UserController", () => {
 
       expect(response.status).toBe(204);
 
-      // Verify user is deleted
       const deletedUser = await userRepository.findByEmail("delete@test.com");
       expect(deletedUser).toBeNull();
     });
@@ -161,9 +156,88 @@ describe("UserController", () => {
       expect(response.status).toBe(403);
       expect(response.body.message).toBe("Insufficient permissions");
 
-      // Verify user is not deleted
       const user = await userRepository.findByEmail("delete@test.com");
       expect(user).not.toBeNull();
+    });
+  });
+
+  describe("PATCH /api/admin/users/:id", () => {
+    let userToUpdate: User;
+
+    beforeEach(async () => {
+      const adminUser = await userRepository.create({
+        email: "admin@test.com",
+        password: "Password123",
+        role: "admin" as const,
+      });
+
+      userToUpdate = await userRepository.create({
+        email: "update@test.com",
+        password: "Password123",
+        role: "user" as const,
+      });
+
+      const normalUser = await userRepository.create({
+        email: "user@test.com",
+        password: "Password123",
+        role: "user" as const,
+      });
+
+      adminToken = jwt.sign(
+        { userId: adminUser._id, email: adminUser.email, role: adminUser.role },
+        process.env.JWT_SECRET!,
+        { expiresIn: "1h" }
+      );
+
+      userToken = jwt.sign(
+        {
+          userId: normalUser._id,
+          email: normalUser.email,
+          role: normalUser.role,
+        },
+        process.env.JWT_SECRET!,
+        { expiresIn: "1h" }
+      );
+    });
+
+    it("should allow admin to update a user", async () => {
+      const updateData = {
+        email: "updated@test.com",
+        role: "admin" as const,
+      };
+
+      const response = await request(app)
+        .patch(`/api/admin/users/${userToUpdate._id}`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .send(updateData);
+
+      expect(response.status).toBe(200);
+      expect(response.body.message).toBe("User updated successfully");
+      expect(response.body.user).toHaveProperty("email", updateData.email);
+      expect(response.body.user).toHaveProperty("role", updateData.role);
+
+      const updatedUser = await userRepository.findByEmail(updateData.email);
+      expect(updatedUser).not.toBeNull();
+      expect(updatedUser?.role).toBe(updateData.role);
+    });
+
+    it("should not allow normal user to update users", async () => {
+      const updateData = {
+        email: "updated@test.com",
+        role: "admin" as const,
+      };
+
+      const response = await request(app)
+        .patch(`/api/admin/users/${userToUpdate._id}`)
+        .set("Authorization", `Bearer ${userToken}`)
+        .send(updateData);
+
+      expect(response.status).toBe(403);
+      expect(response.body.message).toBe("Insufficient permissions");
+
+      const user = await userRepository.findByEmail("update@test.com");
+      expect(user).not.toBeNull();
+      expect(user?.role).toBe("user");
     });
   });
 });

@@ -24,4 +24,18 @@ export class UserRepository {
   async deleteById(id: string): Promise<User | null> {
     return UserModel.findByIdAndDelete(id);
   }
+
+  async updateById(
+    id: string,
+    data: Partial<Omit<User, "_id">>
+  ): Promise<User | null> {
+    try {
+      return await UserModel.findByIdAndUpdate(id, data, { new: true });
+    } catch (error) {
+      if (error instanceof MongoError && error.code === 11000) {
+        throw new Error("Email already exists");
+      }
+      throw error;
+    }
+  }
 }
