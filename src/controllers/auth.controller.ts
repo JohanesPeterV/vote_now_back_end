@@ -17,3 +17,18 @@ export const register: RequestHandler = async (req, res) => {
     res.status(500).json({ message: "Error registering user" });
   }
 };
+
+export const login: RequestHandler = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    const result = await authService.login({ email, password });
+    res.status(200).json(result);
+  } catch (error) {
+    if (error instanceof Error && error.message === "Invalid credentials") {
+      res.status(401).json({ message: error.message });
+      return;
+    }
+    console.error("Login error:", error);
+    res.status(500).json({ message: "Error logging in" });
+  }
+};

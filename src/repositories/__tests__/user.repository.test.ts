@@ -1,21 +1,19 @@
-import mongoose from "mongoose";
+import { connectDB, disconnectDB } from "../../config/db";
 import { UserRepository } from "../user.repository";
-import { connectDB } from "../../config/db";
 
 describe("UserRepository", () => {
-  const testUri = process.env.MONGODB_TEST_URI;
+  const testUri = process.env.DB_URI;
   let userRepository: UserRepository;
 
   beforeAll(async () => {
     if (!testUri) {
-      throw new Error("MONGODB_TEST_URI environment variable is not set");
+      throw new Error("DB_URI environment variable is not set");
     }
     await connectDB(testUri);
     userRepository = new UserRepository();
   });
-
-  beforeEach(async () => {
-    await mongoose.connection.dropDatabase();
+  afterAll(async () => {
+    await disconnectDB();
   });
 
   describe("findByEmail", () => {
@@ -28,8 +26,7 @@ describe("UserRepository", () => {
       await userRepository.create(userData);
 
       const found = await userRepository.findByEmail(userData.email);
-      expect(found).not.toBeNull();
-      expect(found!.email).toBe(userData.email);
+      expect(found?.email).toBe(userData.email);
     });
 
     it("should return null if user with email does not exist", async () => {

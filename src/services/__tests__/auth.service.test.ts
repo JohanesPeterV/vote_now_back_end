@@ -1,21 +1,25 @@
 import mongoose from "mongoose";
 import { AuthService } from "../auth.service";
-import { connectDB } from "../../config/db";
+import { connectDB, disconnectDB } from "../../config/db";
 
 describe("AuthService", () => {
-  const testUri = process.env.MONGODB_TEST_URI;
+  const testUri = process.env.DB_URI;
   let authService: AuthService;
 
   beforeAll(async () => {
     if (!testUri) {
-      throw new Error("MONGODB_TEST_URI environment variable is not set");
+      throw new Error("DB_URI environment variable is not set");
     }
     await connectDB(testUri);
     authService = new AuthService();
   });
 
   beforeEach(async () => {
-    await mongoose.connection.dropDatabase();
+    await mongoose.connection.db?.dropDatabase();
+  });
+
+  afterAll(async () => {
+    await disconnectDB();
   });
 
   describe("register", () => {
@@ -24,11 +28,11 @@ describe("AuthService", () => {
       password: "Password123",
     };
 
-    it("should register a new user", async () => {
+    it("should register a new user and hash password", async () => {
       const user = await authService.register(validUserData);
       expect(user.email).toBe(validUserData.email);
       expect(user.role).toBe("user");
-      expect(user.password).not.toBe(validUserData.password); // Password should be hashed
+      expect(user.password).not.toBe(validUserData.password);
     });
 
     it("should not register a user with existing email", async () => {
@@ -36,6 +40,38 @@ describe("AuthService", () => {
       await expect(authService.register(validUserData)).rejects.toThrow(
         "User already exists"
       );
+    });
+  });
+  describe("login", () => {
+    const validUserData = {
+      email: "login-test@example.com",
+      password: "Password123",
+    };
+
+    beforeEach(async () => {
+      await authService.register(validUserData);
+    });
+
+    it("should login successfully with correct credentials", async () => {
+      const result = await authService.login(validUserData);
+
+      expect(result.token).toBeDefined();
+      expect(typeof result.token).toBe("string");
+    });
+
+    it("should throw error with incorrect password", async () => {
+      await expect(
+        authService.login({ ...validUserData, password: "WrongPassword" })
+      ).rejects.toThrow("Invalid credentials");
+    });
+
+    it("should throw error if user does not exist", async () => {
+      await expect(
+        authService.login({
+          email: "notfound@example.com",
+          password: "Whatever123",
+        })
+      ).rejects.toThrow("Invalid credentials");
     });
   });
 });

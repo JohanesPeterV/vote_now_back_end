@@ -65,8 +65,6 @@ Use Jest + Supertest
 
 All business logic must be tested
 
-Tests must be written before implementation
-
 Required test coverage:
 
 Auth endpoints

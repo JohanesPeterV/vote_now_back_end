@@ -1,20 +1,18 @@
-import mongoose from "mongoose";
 import request from "supertest";
 import app from "../../app";
-import { connectDB } from "../../config/db";
+import { connectDB, disconnectDB } from "../../config/db";
 
 describe("AuthController", () => {
-  const testUri = process.env.MONGODB_TEST_URI;
+  const testUri = process.env.DB_URI;
 
   beforeAll(async () => {
     if (!testUri) {
-      throw new Error("MONGODB_TEST_URI environment variable is not set");
+      throw new Error("DB_URI environment variable is not set");
     }
     await connectDB(testUri);
   });
-
-  beforeEach(async () => {
-    await mongoose.connection.db!.dropDatabase();
+  afterAll(async () => {
+    await disconnectDB();
   });
 
   describe("POST /api/auth/register", () => {
@@ -32,7 +30,7 @@ describe("AuthController", () => {
       expect(response.body.message).toBe("User registered successfully");
     });
 
-    it("register should check if user with email already exists", async () => {
+    it("should check if user with email already registered", async () => {
       await request(app).post("/api/auth/register").send(validUserData);
 
       const response = await request(app)
@@ -59,6 +57,45 @@ describe("AuthController", () => {
 
       expect(response.status).toBe(400);
       expect(response.body.message).toBe("Validation error");
+    });
+  });
+
+  describe("POST /api/auth/login", () => {
+    const validUserData = {
+      email: "testlogin@example.com",
+      password: "Password123",
+    };
+
+    beforeAll(async () => {
+      await request(app).post("/api/auth/register").send(validUserData);
+    });
+
+    it("should login successfully with valid credentials", async () => {
+      const response = await request(app)
+        .post("/api/auth/login")
+        .send(validUserData);
+
+      expect(response.status).toBe(200);
+      expect(response.body.token).toBeDefined();
+      expect(typeof response.body.token).toBe("string");
+    });
+
+    it("should reject login with wrong password", async () => {
+      const response = await request(app)
+        .post("/api/auth/login")
+        .send({ ...validUserData, password: "WrongPassword" });
+
+      expect(response.status).toBe(401);
+      expect(response.body.message).toBe("Invalid credentials");
+    });
+
+    it("should reject login if user not found", async () => {
+      const response = await request(app)
+        .post("/api/auth/login")
+        .send({ email: "notfound@example.com", password: "Whatever123" });
+
+      expect(response.status).toBe(401);
+      expect(response.body.message).toBe("Invalid credentials");
     });
   });
 });

@@ -1,5 +1,6 @@
 import bcrypt from "bcrypt";
-import { RegisterInput } from "../validators/auth.validator";
+import jwt from "jsonwebtoken";
+import { RegisterInput, LoginInput } from "../validators/auth.validator";
 import { UserRepository } from "../repositories/user.repository";
 
 export class AuthService {
@@ -23,5 +24,25 @@ export class AuthService {
       password: hashedPassword,
       role: "user",
     });
+  }
+
+  async login(data: LoginInput) {
+    const user = await this.userRepository.findByEmail(data.email);
+    if (!user) {
+      throw new Error("Invalid credentials");
+    }
+
+    const isValidPassword = await bcrypt.compare(data.password, user.password);
+    if (!isValidPassword) {
+      throw new Error("Invalid credentials");
+    }
+
+    const token = jwt.sign(
+      { userId: user._id, email: user.email, role: user.role },
+      process.env.JWT_SECRET!,
+      { expiresIn: "7d" }
+    );
+
+    return { token };
   }
 }
