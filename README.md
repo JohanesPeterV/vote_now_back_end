@@ -45,6 +45,24 @@ NODE_ENV=development
 
 4. Start MongoDB service on your machine
 
+## Setting Up Admin User
+
+To create an admin user, follow these steps:
+
+1. First, register a normal user through the `/api/auth/register` endpoint
+2. Connect to your MongoDB database
+3. Find the user in the `users` collection
+4. Update the user's role to "admin":
+
+```javascript
+db.users.updateOne(
+  { email: "your-email@example.com" },
+  { $set: { role: "admin" } }
+);
+```
+
+Note: The admin role cannot be set through the API for security reasons. It must be manually set in the database.
+
 ## Running the Application
 
 ### Development Mode
@@ -128,3 +146,15 @@ src/
 ├── utils/          # Utility functions
 └── validators/     # Input validation schemas
 ```
+
+## Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## License
+
+This project is licensed under the MIT License.
