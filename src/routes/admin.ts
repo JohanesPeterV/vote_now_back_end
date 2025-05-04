@@ -4,6 +4,7 @@ import {
   deleteUserById,
   updateUserById,
 } from "../controllers/user.controller";
+import { getAllVotesDetailed } from "../controllers/admin.controller";
 import { authenticateJWT } from "../middlewares/authenticate";
 import { authorizeRole } from "../middlewares/authorize";
 
@@ -21,6 +22,13 @@ router.patch(
   authenticateJWT,
   authorizeRole("admin"),
   updateUserById
+);
+
+router.get(
+  "/votes",
+  authenticateJWT,
+  authorizeRole("admin"),
+  getAllVotesDetailed
 );
 
 export default router;

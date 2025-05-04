@@ -29,4 +29,8 @@ export class VoteService {
   async getUserVote(userId: string): Promise<Vote | null> {
     return this.voteRepository.findByUserId(userId);
   }
+
+  async getDetailedVotes(): Promise<Vote[]> {
+    return this.voteRepository.findAllDetailed();
+  }
 }

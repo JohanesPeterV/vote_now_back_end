@@ -1,17 +1,19 @@
 import express from "express";
 import dotenv from "dotenv";
 import authRoutes from "./routes/auth";
-import adminRoutes from "./routes/admin";
 import voteRoutes from "./routes/vote";
+import adminRoutes from "./routes/admin";
 import { connectDB } from "./config/db";
+
 dotenv.config();
 
 const app = express();
 
 app.use(express.json());
+
 app.use("/api/auth", authRoutes);
-app.use("/api/admin", adminRoutes);
 app.use("/api/votes", voteRoutes);
+app.use("/api/admin", adminRoutes);
 
 app.get("/health", (_req, res) => {
   res.status(200).json({ status: "ok" });

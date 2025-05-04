@@ -17,4 +17,10 @@ export class VoteRepository {
   async findAll(): Promise<Vote[]> {
     return VoteModel.find();
   }
+
+  async findAllDetailed(): Promise<Vote[]> {
+    return VoteModel.find()
+      .select("userId name createdAt")
+      .sort({ createdAt: -1 });
+  }
 }

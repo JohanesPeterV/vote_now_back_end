@@ -4,39 +4,56 @@ import request from "supertest";
 import jwt from "jsonwebtoken";
 import app from "../../app";
 import { VoteModel } from "../../models/vote.model";
+import { UserModel } from "../../models/user.model";
 
 describe("VoteController", () => {
   let mongoServer: MongoMemoryServer;
   let userToken: string;
+  let adminToken: string;
+  let userId: string;
 
   beforeAll(async () => {
-    mongoServer = await MongoMemoryServer.create();
-    const mongoUri = mongoServer.getUri();
-    await mongoose.connect(mongoUri);
+    await mongoose.connect(
+      process.env.MONGODB_URI || "mongodb://localhost:27017/test"
+    );
+  });
 
-    const userId = new mongoose.Types.ObjectId();
-    const adminId = new mongoose.Types.ObjectId();
+  afterAll(async () => {
+    await mongoose.connection.dropDatabase();
+    await mongoose.connection.close();
+  });
 
+  beforeEach(async () => {
+    await VoteModel.deleteMany({});
+    await UserModel.deleteMany({});
+
+    // Create test user
+    const user = await UserModel.create({
+      email: "test@example.com",
+      password: "Password123",
+      role: "user",
+    });
+    userId = user._id.toString();
+
+    // Create admin user
+    const admin = await UserModel.create({
+      email: "admin@example.com",
+      password: "Password123",
+      role: "admin",
+    });
+
+    // Create tokens
     userToken = jwt.sign(
-      { userId, email: "user@test.com", role: "user" },
-      process.env.JWT_SECRET!,
+      { userId: user._id, email: user.email, role: user.role },
+      process.env.JWT_SECRET || "test_secret",
       { expiresIn: "1h" }
     );
 
     adminToken = jwt.sign(
-      { userId: adminId, email: "admin@test.com", role: "admin" },
-      process.env.JWT_SECRET!,
+      { userId: admin._id, email: admin.email, role: admin.role },
+      process.env.JWT_SECRET || "test_secret",
       { expiresIn: "1h" }
     );
-  });
-
-  beforeEach(async () => {
-    await mongoose.connection.dropDatabase();
-  });
-
-  afterAll(async () => {
-    await mongoose.disconnect();
-    await mongoServer.stop();
   });
 
   describe("POST /api/votes", () => {

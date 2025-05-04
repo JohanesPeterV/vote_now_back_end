@@ -93,4 +93,60 @@ describe("VoteRepository", () => {
       expect(foundVotes).toHaveLength(0);
     });
   });
+
+  describe("findAllDetailed", () => {
+    it("should return all votes with userId, name, and createdAt fields", async () => {
+      const userId1 = new mongoose.Types.ObjectId();
+      const userId2 = new mongoose.Types.ObjectId();
+
+      await VoteModel.create([
+        {
+          userId: userId1,
+          name: "Candidate A",
+          createdAt: new Date("2024-01-01"),
+        },
+        {
+          userId: userId2,
+          name: "Candidate B",
+          createdAt: new Date("2024-01-02"),
+        },
+      ]);
+
+      const votes = await voteRepository.findAllDetailed();
+
+      expect(votes).toHaveLength(2);
+      expect(votes[0]).toHaveProperty("userId");
+      expect(votes[0]).toHaveProperty("name");
+      expect(votes[0]).toHaveProperty("createdAt");
+    });
+
+    it("should return votes sorted by createdAt in descending order", async () => {
+      const userId1 = new mongoose.Types.ObjectId();
+      const userId2 = new mongoose.Types.ObjectId();
+
+      await VoteModel.create([
+        {
+          userId: userId1,
+          name: "Candidate A",
+          createdAt: new Date("2024-01-01"),
+        },
+        {
+          userId: userId2,
+          name: "Candidate B",
+          createdAt: new Date("2024-01-02"),
+        },
+      ]);
+
+      const votes = await voteRepository.findAllDetailed();
+
+      expect(votes).toHaveLength(2);
+      expect(votes[0].name).toBe("Candidate B"); // Most recent first
+      expect(votes[1].name).toBe("Candidate A"); // Older second
+    });
+
+    it("should return empty array when no votes exist", async () => {
+      const votes = await voteRepository.findAllDetailed();
+      expect(votes).toHaveLength(0);
+    });
+  });
 });
