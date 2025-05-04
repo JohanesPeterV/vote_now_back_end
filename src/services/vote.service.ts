@@ -1,4 +1,4 @@
-import { VoteRepository } from "../repositories/vote.repository";
+import { VoteRepository, VoteCount } from "../repositories/vote.repository";
 import { Vote } from "../models/vote.model";
 import mongoose from "mongoose";
 
@@ -32,5 +32,9 @@ export class VoteService {
 
   async getDetailedVotes(): Promise<Vote[]> {
     return this.voteRepository.findAllDetailed();
+  }
+
+  async getVoteResults(): Promise<VoteCount[]> {
+    return this.voteRepository.aggregateVotesByName();
   }
 }

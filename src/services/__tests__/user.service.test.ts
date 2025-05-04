@@ -1,26 +1,14 @@
-import mongoose from "mongoose";
-import { MongoMemoryServer } from "mongodb-memory-server";
 import { UserService } from "../user.service";
 import { UserModel } from "../../models/user.model";
+import { setupTestDB } from "../../config/__tests__/setup";
 
 describe("UserService", () => {
-  let mongoServer: MongoMemoryServer;
   let userService: UserService;
 
-  beforeAll(async () => {
-    mongoServer = await MongoMemoryServer.create();
-    const mongoUri = mongoServer.getUri();
-    await mongoose.connect(mongoUri);
+  setupTestDB();
+
+  beforeAll(() => {
     userService = new UserService();
-  });
-
-  afterAll(async () => {
-    await mongoose.disconnect();
-    await mongoServer.stop();
-  });
-
-  beforeEach(async () => {
-    await UserModel.deleteMany({});
   });
 
   describe("getAllUsers", () => {

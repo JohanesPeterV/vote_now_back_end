@@ -1,33 +1,21 @@
 import mongoose from "mongoose";
-import { MongoMemoryServer } from "mongodb-memory-server";
 import request from "supertest";
 import jwt from "jsonwebtoken";
 import app from "../../app";
 import { VoteModel } from "../../models/vote.model";
 import { UserModel } from "../../models/user.model";
+import { setupTestDB } from "../../config/__tests__/setup";
 
 describe("VoteController", () => {
-  let mongoServer: MongoMemoryServer;
   let userToken: string;
-  let adminToken: string;
   let userId: string;
 
-  beforeAll(async () => {
-    await mongoose.connect(
-      process.env.MONGODB_URI || "mongodb://localhost:27017/test"
-    );
-  });
-
-  afterAll(async () => {
-    await mongoose.connection.dropDatabase();
-    await mongoose.connection.close();
-  });
+  setupTestDB();
 
   beforeEach(async () => {
     await VoteModel.deleteMany({});
     await UserModel.deleteMany({});
 
-    // Create test user
     const user = await UserModel.create({
       email: "test@example.com",
       password: "Password123",
@@ -35,22 +23,8 @@ describe("VoteController", () => {
     });
     userId = user._id.toString();
 
-    // Create admin user
-    const admin = await UserModel.create({
-      email: "admin@example.com",
-      password: "Password123",
-      role: "admin",
-    });
-
-    // Create tokens
     userToken = jwt.sign(
       { userId: user._id, email: user.email, role: user.role },
-      process.env.JWT_SECRET || "test_secret",
-      { expiresIn: "1h" }
-    );
-
-    adminToken = jwt.sign(
-      { userId: admin._id, email: admin.email, role: admin.role },
       process.env.JWT_SECRET || "test_secret",
       { expiresIn: "1h" }
     );
@@ -131,18 +105,11 @@ describe("VoteController", () => {
 
   describe("GET /api/votes/my-vote", () => {
     it("should return user's vote", async () => {
-      const userId = new mongoose.Types.ObjectId();
       await VoteModel.create({
-        userId,
+        userId: new mongoose.Types.ObjectId(userId),
         name: "Test Vote",
         createdAt: new Date(),
       });
-
-      const userToken = jwt.sign(
-        { userId, email: "user@test.com", role: "user" },
-        process.env.JWT_SECRET!,
-        { expiresIn: "1h" }
-      );
 
       const response = await request(app)
         .get("/api/votes/my-vote")
@@ -167,6 +134,60 @@ describe("VoteController", () => {
 
       expect(response.status).toBe(401);
       expect(response.body.message).toBe("No token provided");
+    });
+  });
+
+  describe("GET /api/votes/result", () => {
+    it("should return aggregated vote results", async () => {
+      await VoteModel.create([
+        {
+          userId: new mongoose.Types.ObjectId(),
+          name: "Candidate A",
+          createdAt: new Date(),
+        },
+        {
+          userId: new mongoose.Types.ObjectId(),
+          name: "Candidate B",
+          createdAt: new Date(),
+        },
+        {
+          userId: new mongoose.Types.ObjectId(),
+          name: "Candidate A",
+          createdAt: new Date(),
+        },
+      ]);
+
+      const response = await request(app).get("/api/votes/result");
+
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveLength(2);
+      expect(response.body).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ name: "Candidate A", count: 2 }),
+          expect.objectContaining({ name: "Candidate B", count: 1 }),
+        ])
+      );
+    });
+
+    it("should return empty array when no votes exist", async () => {
+      const response = await request(app).get("/api/votes/result");
+
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveLength(0);
+    });
+
+    it("should handle database errors gracefully", async () => {
+      jest.spyOn(VoteModel, "aggregate").mockImplementationOnce(() => {
+        throw new Error("Database error");
+      });
+
+      const response = await request(app).get("/api/votes/result");
+
+      expect(response.status).toBe(500);
+      expect(response.body).toHaveProperty(
+        "message",
+        "Error fetching vote results"
+      );
     });
   });
 });

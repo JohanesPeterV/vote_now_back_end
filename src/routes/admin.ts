@@ -3,8 +3,8 @@ import {
   getAllUsers,
   deleteUserById,
   updateUserById,
-} from "../controllers/user.controller";
-import { getAllVotesDetailed } from "../controllers/admin.controller";
+  getAllVotesDetailed,
+} from "../controllers/admin.controller";
 import { authenticateJWT } from "../middlewares/authenticate";
 import { authorizeRole } from "../middlewares/authorize";
 

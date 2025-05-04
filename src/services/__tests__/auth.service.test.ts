@@ -1,25 +1,13 @@
-import mongoose from "mongoose";
-import { MongoMemoryServer } from "mongodb-memory-server";
 import { AuthService } from "../auth.service";
+import { setupTestDB } from "../../config/__tests__/setup";
 
 describe("AuthService", () => {
-  let mongoServer: MongoMemoryServer;
   let authService: AuthService;
 
-  beforeAll(async () => {
-    mongoServer = await MongoMemoryServer.create();
-    const mongoUri = mongoServer.getUri();
-    await mongoose.connect(mongoUri);
+  setupTestDB();
+
+  beforeAll(() => {
     authService = new AuthService();
-  });
-
-  beforeEach(async () => {
-    await mongoose.connection.dropDatabase();
-  });
-
-  afterAll(async () => {
-    await mongoose.disconnect();
-    await mongoServer.stop();
   });
 
   describe("register", () => {

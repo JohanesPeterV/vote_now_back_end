@@ -1,26 +1,15 @@
 import mongoose from "mongoose";
-import { MongoMemoryServer } from "mongodb-memory-server";
 import { VoteService } from "../vote.service";
 import { VoteModel } from "../../models/vote.model";
+import { setupTestDB } from "../../config/__tests__/setup";
 
 describe("VoteService", () => {
-  let mongoServer: MongoMemoryServer;
   let voteService: VoteService;
 
-  beforeAll(async () => {
-    mongoServer = await MongoMemoryServer.create();
-    const mongoUri = mongoServer.getUri();
-    await mongoose.connect(mongoUri);
+  setupTestDB();
+
+  beforeAll(() => {
     voteService = new VoteService();
-  });
-
-  beforeEach(async () => {
-    await mongoose.connection.dropDatabase();
-  });
-
-  afterAll(async () => {
-    await mongoose.disconnect();
-    await mongoServer.stop();
   });
 
   describe("castVote", () => {
@@ -95,7 +84,6 @@ describe("VoteService", () => {
 
   describe("getDetailedVotes", () => {
     it("should return all votes with detailed information", async () => {
-      // Create test votes
       const userId1 = new mongoose.Types.ObjectId();
       const userId2 = new mongoose.Types.ObjectId();
 
@@ -118,13 +106,50 @@ describe("VoteService", () => {
       expect(votes[0]).toHaveProperty("userId");
       expect(votes[0]).toHaveProperty("name");
       expect(votes[0]).toHaveProperty("createdAt");
-      expect(votes[0].name).toBe("Candidate B"); // Most recent first
-      expect(votes[1].name).toBe("Candidate A"); // Older second
+      expect(votes[0].name).toBe("Candidate B");
+      expect(votes[1].name).toBe("Candidate A");
     });
 
     it("should return empty array when no votes exist", async () => {
       const votes = await voteService.getDetailedVotes();
       expect(votes).toHaveLength(0);
+    });
+  });
+
+  describe("getVoteResults", () => {
+    it("should return aggregated vote results", async () => {
+      await VoteModel.create([
+        {
+          userId: new mongoose.Types.ObjectId(),
+          name: "Candidate A",
+          createdAt: new Date(),
+        },
+        {
+          userId: new mongoose.Types.ObjectId(),
+          name: "Candidate B",
+          createdAt: new Date(),
+        },
+        {
+          userId: new mongoose.Types.ObjectId(),
+          name: "Candidate A",
+          createdAt: new Date(),
+        },
+      ]);
+
+      const results = await voteService.getVoteResults();
+
+      expect(results).toHaveLength(2);
+      expect(results).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ name: "Candidate A", count: 2 }),
+          expect.objectContaining({ name: "Candidate B", count: 1 }),
+        ])
+      );
+    });
+
+    it("should return empty array when no votes exist", async () => {
+      const results = await voteService.getVoteResults();
+      expect(results).toHaveLength(0);
     });
   });
 });

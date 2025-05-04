@@ -1,6 +1,11 @@
 import { Vote, VoteModel } from "../models/vote.model";
 import mongoose from "mongoose";
 
+export interface VoteCount {
+  name: string;
+  count: number;
+}
+
 export class VoteRepository {
   async create(vote: {
     userId: mongoose.Types.ObjectId;
@@ -22,5 +27,28 @@ export class VoteRepository {
     return VoteModel.find()
       .select("userId name createdAt")
       .sort({ createdAt: -1 });
+  }
+
+  async aggregateVotesByName(): Promise<VoteCount[]> {
+    const results = await VoteModel.aggregate([
+      {
+        $group: {
+          _id: "$name",
+          count: { $sum: 1 },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          name: "$_id",
+          count: 1,
+        },
+      },
+      {
+        $sort: { count: -1 },
+      },
+    ]);
+
+    return results.length > 0 ? results : [];
   }
 }

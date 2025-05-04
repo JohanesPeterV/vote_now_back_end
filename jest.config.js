@@ -7,5 +7,5 @@ module.exports = {
     '^.+\\.ts$': 'ts-jest',
   },
   testMatch: ['**/__tests__/**/*.test.ts'],
-  setupFiles: ['<rootDir>/src/config/__tests__/setup.ts']
+  setupFiles: ['<rootDir>/src/config/__tests__/setup.ts'],
 };

@@ -1,31 +1,19 @@
-import mongoose from "mongoose";
 import request from "supertest";
 import jwt from "jsonwebtoken";
-import { MongoMemoryServer } from "mongodb-memory-server";
 import app from "../../app";
 import { UserRepository } from "../../repositories/user.repository";
 import { User } from "../../models/user.model";
+import { setupTestDB } from "../../config/__tests__/setup";
 
 describe("UserController", () => {
-  let mongoServer: MongoMemoryServer;
   let userRepository: UserRepository;
   let adminToken: string;
   let userToken: string;
 
-  beforeAll(async () => {
-    mongoServer = await MongoMemoryServer.create();
-    const mongoUri = mongoServer.getUri();
-    await mongoose.connect(mongoUri);
+  setupTestDB();
+
+  beforeAll(() => {
     userRepository = new UserRepository();
-  });
-
-  beforeEach(async () => {
-    await mongoose.connection.dropDatabase();
-  });
-
-  afterAll(async () => {
-    await mongoose.disconnect();
-    await mongoServer.stop();
   });
 
   describe("GET /api/admin/users", () => {

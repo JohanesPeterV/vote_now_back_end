@@ -1,27 +1,14 @@
 import request from "supertest";
-import { MongoMemoryServer } from "mongodb-memory-server";
-import mongoose from "mongoose";
 import app from "../app";
-import { User } from "../models/user.model";
+import { UserModel } from "../models/user.model";
 import jwt from "jsonwebtoken";
-import config from "../config";
+import { setupTestDB } from "../config/__tests__/setup";
 
 describe("Authentication Endpoints", () => {
-  let mongoServer: MongoMemoryServer;
-
-  beforeAll(async () => {
-    mongoServer = await MongoMemoryServer.create();
-    const mongoUri = mongoServer.getUri();
-    await mongoose.connect(mongoUri);
-  });
-
-  afterAll(async () => {
-    await mongoose.disconnect();
-    await mongoServer.stop();
-  });
+  setupTestDB();
 
   beforeEach(async () => {
-    await User.deleteMany({});
+    await UserModel.deleteMany({});
   });
 
   describe("POST /api/auth/register", () => {
@@ -92,7 +79,7 @@ describe("Authentication Endpoints", () => {
       expect(res.body.user).toHaveProperty("email", testUser.email);
       expect(res.body.user).not.toHaveProperty("password");
 
-      const decoded = jwt.verify(res.body.token, config.jwtSecret);
+      const decoded = jwt.verify(res.body.token, process.env.JWT_SECRET!);
       expect(decoded).toHaveProperty("email", testUser.email);
     });
 

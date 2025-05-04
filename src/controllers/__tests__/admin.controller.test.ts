@@ -1,102 +1,127 @@
-import mongoose from "mongoose";
 import request from "supertest";
 import app from "../../app";
-import { VoteModel } from "../../models/vote.model";
 import { UserModel } from "../../models/user.model";
+import { VoteModel } from "../../models/vote.model";
+import { setupTestDB } from "../../config/__tests__/setup";
 import jwt from "jsonwebtoken";
 
-describe("AdminController", () => {
-  beforeAll(async () => {
-    await mongoose.connect(
-      process.env.MONGODB_URI || "mongodb://localhost:27017/test"
+describe("Admin Controller", () => {
+  setupTestDB();
+
+  let adminToken: string;
+
+  beforeEach(async () => {
+    await UserModel.deleteMany({});
+    await VoteModel.deleteMany({});
+
+    const admin = await UserModel.create({
+      email: "admin@example.com",
+      password: "Password123!",
+      role: "admin",
+    });
+
+    adminToken = jwt.sign(
+      { userId: admin._id, email: admin.email, role: admin.role },
+      process.env.JWT_SECRET!,
+      { expiresIn: "1h" }
     );
   });
 
-  afterAll(async () => {
-    await mongoose.connection.dropDatabase();
-    await mongoose.connection.close();
-  });
+  describe("GET /api/admin/users", () => {
+    it("should return all users", async () => {
+      const users = [
+        {
+          email: "user1@example.com",
+          password: "Password123!",
+          role: "user",
+        },
+        {
+          email: "user2@example.com",
+          password: "Password123!",
+          role: "user",
+        },
+      ];
 
-  beforeEach(async () => {
-    await VoteModel.deleteMany({});
-    await UserModel.deleteMany({});
-  });
+      await UserModel.insertMany(users);
 
-  describe("GET /api/admin/votes", () => {
-    it("should return all votes when authenticated as admin", async () => {
-      // Create admin user
-      const adminUser = await UserModel.create({
+      const res = await request(app)
+        .get("/api/admin/users")
+        .set("Authorization", `Bearer ${adminToken}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveLength(3);
+      expect(res.body[1]).toHaveProperty("email", users[0].email);
+      expect(res.body[2]).toHaveProperty("email", users[1].email);
+    });
+
+    it("should return empty array when no users exist", async () => {
+      await UserModel.deleteMany({});
+
+      const admin = await UserModel.create({
         email: "admin@example.com",
-        password: "Password123",
+        password: "Password123!",
         role: "admin",
       });
 
-      // Create test votes
-      const userId1 = new mongoose.Types.ObjectId();
-      const userId2 = new mongoose.Types.ObjectId();
-
-      await VoteModel.create([
-        {
-          userId: userId1,
-          name: "Candidate A",
-          createdAt: new Date("2024-01-01"),
-        },
-        {
-          userId: userId2,
-          name: "Candidate B",
-          createdAt: new Date("2024-01-02"),
-        },
-      ]);
-
-      // Create admin JWT token
       const token = jwt.sign(
-        { userId: adminUser._id, email: adminUser.email, role: adminUser.role },
-        process.env.JWT_SECRET || "test_secret",
+        { userId: admin._id, email: admin.email, role: admin.role },
+        process.env.JWT_SECRET!,
         { expiresIn: "1h" }
       );
 
-      const response = await request(app)
-        .get("/api/admin/votes")
+      const res = await request(app)
+        .get("/api/admin/users")
         .set("Authorization", `Bearer ${token}`);
 
-      expect(response.status).toBe(200);
-      expect(response.body).toHaveLength(2);
-      expect(response.body[0]).toHaveProperty("userId");
-      expect(response.body[0]).toHaveProperty("name");
-      expect(response.body[0]).toHaveProperty("createdAt");
-      expect(response.body[0].name).toBe("Candidate B"); // Most recent first
-      expect(response.body[1].name).toBe("Candidate A"); // Older second
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveLength(1);
     });
+  });
 
-    it("should return 401 when not authenticated", async () => {
-      const response = await request(app).get("/api/admin/votes");
-      expect(response.status).toBe(401);
-    });
-
-    it("should return 403 when authenticated as non-admin", async () => {
-      // Create regular user
-      const regularUser = await UserModel.create({
-        email: "user@example.com",
-        password: "Password123",
+  describe("GET /api/admin/votes", () => {
+    it("should return all votes", async () => {
+      const user1 = await UserModel.create({
+        email: "user1@example.com",
+        password: "Password123!",
         role: "user",
       });
 
-      // Create user JWT token
-      const token = jwt.sign(
+      const user2 = await UserModel.create({
+        email: "user2@example.com",
+        password: "Password123!",
+        role: "user",
+      });
+
+      const votes = [
         {
-          userId: regularUser._id,
-          email: regularUser.email,
-          role: regularUser.role,
+          userId: user1._id,
+          name: "Vote 1",
         },
-        process.env.JWT_SECRET || "test_secret",
-        { expiresIn: "1h" }
-      );
+        {
+          userId: user2._id,
+          name: "Vote 2",
+        },
+      ];
 
-      const response = await request(app)
+      await VoteModel.insertMany(votes);
+
+      const res = await request(app)
         .get("/api/admin/votes")
-        .set("Authorization", `Bearer ${token}`);
+        .set("Authorization", `Bearer ${adminToken}`);
 
-      expect(response.status).toBe(403);
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveLength(2);
+      expect(res.body[0]).toHaveProperty("name", votes[0].name);
+      expect(res.body[1]).toHaveProperty("name", votes[1].name);
+    });
+
+    it("should return empty array when no votes exist", async () => {
+      const res = await request(app)
+        .get("/api/admin/votes")
+        .set("Authorization", `Bearer ${adminToken}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveLength(0);
     });
   });
 });

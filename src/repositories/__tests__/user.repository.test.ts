@@ -1,26 +1,14 @@
-import mongoose from "mongoose";
-import { MongoMemoryServer } from "mongodb-memory-server";
 import { UserRepository } from "../user.repository";
 import { UserModel } from "../../models/user.model";
+import { setupTestDB } from "../../config/__tests__/setup";
 
 describe("UserRepository", () => {
-  let mongoServer: MongoMemoryServer;
   let userRepository: UserRepository;
 
-  beforeAll(async () => {
-    mongoServer = await MongoMemoryServer.create();
-    const mongoUri = mongoServer.getUri();
-    await mongoose.connect(mongoUri);
+  setupTestDB();
+
+  beforeAll(() => {
     userRepository = new UserRepository();
-  });
-
-  afterAll(async () => {
-    await mongoose.disconnect();
-    await mongoServer.stop();
-  });
-
-  beforeEach(async () => {
-    await UserModel.deleteMany({});
   });
 
   describe("findByEmail", () => {

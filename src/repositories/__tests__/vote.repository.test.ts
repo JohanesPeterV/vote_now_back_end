@@ -1,26 +1,15 @@
 import mongoose from "mongoose";
-import { MongoMemoryServer } from "mongodb-memory-server";
 import { VoteRepository } from "../vote.repository";
 import { VoteModel } from "../../models/vote.model";
+import { setupTestDB } from "../../config/__tests__/setup";
 
 describe("VoteRepository", () => {
-  let mongoServer: MongoMemoryServer;
   let voteRepository: VoteRepository;
 
-  beforeAll(async () => {
-    mongoServer = await MongoMemoryServer.create();
-    const mongoUri = mongoServer.getUri();
-    await mongoose.connect(mongoUri);
+  setupTestDB();
+
+  beforeAll(() => {
     voteRepository = new VoteRepository();
-  });
-
-  beforeEach(async () => {
-    await mongoose.connection.dropDatabase();
-  });
-
-  afterAll(async () => {
-    await mongoose.disconnect();
-    await mongoServer.stop();
   });
 
   describe("create", () => {
@@ -140,13 +129,78 @@ describe("VoteRepository", () => {
       const votes = await voteRepository.findAllDetailed();
 
       expect(votes).toHaveLength(2);
-      expect(votes[0].name).toBe("Candidate B"); // Most recent first
-      expect(votes[1].name).toBe("Candidate A"); // Older second
+      expect(votes[0].name).toBe("Candidate B");
+      expect(votes[1].name).toBe("Candidate A");
     });
 
     it("should return empty array when no votes exist", async () => {
       const votes = await voteRepository.findAllDetailed();
       expect(votes).toHaveLength(0);
+    });
+  });
+
+  describe("aggregateVotesByName", () => {
+    it("should aggregate votes by name and return counts", async () => {
+      await VoteModel.create([
+        {
+          userId: new mongoose.Types.ObjectId(),
+          name: "Candidate A",
+          createdAt: new Date(),
+        },
+        {
+          userId: new mongoose.Types.ObjectId(),
+          name: "Candidate B",
+          createdAt: new Date(),
+        },
+        {
+          userId: new mongoose.Types.ObjectId(),
+          name: "Candidate A",
+          createdAt: new Date(),
+        },
+      ]);
+
+      const results = await voteRepository.aggregateVotesByName();
+
+      expect(results).toHaveLength(2);
+      expect(results).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ name: "Candidate A", count: 2 }),
+          expect.objectContaining({ name: "Candidate B", count: 1 }),
+        ])
+      );
+    });
+
+    it("should return empty array when no votes exist", async () => {
+      const results = await voteRepository.aggregateVotesByName();
+      expect(results).toHaveLength(0);
+    });
+
+    it("should sort results by count in descending order", async () => {
+      await VoteModel.create([
+        {
+          userId: new mongoose.Types.ObjectId(),
+          name: "Candidate A",
+          createdAt: new Date(),
+        },
+        {
+          userId: new mongoose.Types.ObjectId(),
+          name: "Candidate B",
+          createdAt: new Date(),
+        },
+        {
+          userId: new mongoose.Types.ObjectId(),
+          name: "Candidate B",
+          createdAt: new Date(),
+        },
+      ]);
+
+      const results = await voteRepository.aggregateVotesByName();
+
+      expect(results).toHaveLength(2);
+      expect(results[0].name).toBe("Candidate B");
+      expect(results[0].count).toBe(2);
+      expect(results[1].name).toBe("Candidate A");
+      expect(results[1].count).toBe(1);
     });
   });
 });
