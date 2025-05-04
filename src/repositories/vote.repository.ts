@@ -26,6 +26,7 @@ export class VoteRepository {
   async findAllDetailed(): Promise<Vote[]> {
     return VoteModel.find()
       .select("userId name createdAt")
+      .populate("userId", "email")
       .sort({ createdAt: -1 });
   }
 
