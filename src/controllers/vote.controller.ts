@@ -87,3 +87,13 @@ export const getVoteResults: RequestHandler = async (_req, res) => {
     res.status(500).json({ message: "Error fetching vote results" });
   }
 };
+
+export const getUniqueVoteNames: RequestHandler = async (_req, res) => {
+  try {
+    const names = await voteService.getUniqueVoteNames();
+    res.status(200).json(names);
+  } catch (error) {
+    console.error("Error fetching unique vote names:", error);
+    res.status(500).json({ message: "Error fetching unique vote names" });
+  }
+};

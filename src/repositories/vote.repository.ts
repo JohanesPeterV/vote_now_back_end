@@ -51,4 +51,9 @@ export class VoteRepository {
 
     return results.length > 0 ? results : [];
   }
+
+  async getUniqueVoteNames(): Promise<string[]> {
+    const results = await VoteModel.distinct("name");
+    return results;
+  }
 }

@@ -104,57 +104,8 @@ npm run test:coverage
 - `GET /api/votes` - Get all votes
 - `GET /api/votes/my-vote` - Get user's vote (requires authentication)
 - `GET /api/votes/result` - Get vote results
+- `GET /api/votes/names` - Get list of unique vote names
 
 ### Admin Routes (requires admin role)
 
-- `GET /api/admin/users` - Get all users
-- `DELETE /api/admin/users/:id` - Delete a user
-- `PATCH /api/admin/users/:id` - Update a user
-- `GET /api/admin/votes` - Get detailed vote information
-
-## Error Handling
-
-The application includes comprehensive error handling for:
-
-- Validation errors
-- Authentication errors
-- Database errors
-- Not found errors
-- Server errors
-
-## Security Features
-
-- JWT-based authentication
-- Password hashing
-- Role-based authorization
-- Input validation
-- CORS enabled
-- Environment variable configuration
-
-## Project Structure
-
-```
-src/
-├── config/         # Configuration files
-├── controllers/    # Route controllers
-├── middlewares/    # Custom middlewares
-├── models/         # Database models
-├── repositories/   # Data access layer
-├── routes/         # API routes
-├── services/       # Business logic
-├── types/          # TypeScript types
-├── utils/          # Utility functions
-└── validators/     # Input validation schemas
-```
-
-## Contributing
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## License
-
-This project is licensed under the MIT License.
+- `

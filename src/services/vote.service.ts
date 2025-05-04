@@ -37,4 +37,8 @@ export class VoteService {
   async getVoteResults(): Promise<VoteCount[]> {
     return this.voteRepository.aggregateVotesByName();
   }
+
+  async getUniqueVoteNames(): Promise<string[]> {
+    return this.voteRepository.getUniqueVoteNames();
+  }
 }

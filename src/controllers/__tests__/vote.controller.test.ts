@@ -190,4 +190,23 @@ describe("VoteController", () => {
       );
     });
   });
+
+  describe("GET /api/votes/names", () => {
+    it("should return unique vote names", async () => {
+      const votes = [
+        { userId: new mongoose.Types.ObjectId(), name: "Option 1" },
+        { userId: new mongoose.Types.ObjectId(), name: "Option 2" },
+        { userId: new mongoose.Types.ObjectId(), name: "Option 1" },
+      ];
+
+      await VoteModel.insertMany(votes);
+
+      const res = await request(app).get("/api/votes/names");
+
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveLength(2);
+      expect(res.body).toContain("Option 1");
+      expect(res.body).toContain("Option 2");
+    });
+  });
 });
